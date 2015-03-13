@@ -1,0 +1,29 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+version = '1.0.0'
+
+repositories { mavenCentral() }
+
+dependencies{
+	compile 'commons-net:commons-net:3.3'
+	compile('jcifs:jcifs:1.3.17') {
+		exclude(group: 'javax.servlet', module: 'servlet-api')
+	}
+	compile 'com.jcraft:jsch:0.1.51'
+}
+
+jar{
+	destinationDir file('/publish/')
+	from {
+		configurations.compile.collect {
+			it.isDirectory() ? it : zipTree(it)
+		}
+		configurations.runtime.collect {
+			it.isDirectory() ? it : zipTree(it)
+		}
+	}
+	exclude('**/servlet*.jar')
+}
+
+
