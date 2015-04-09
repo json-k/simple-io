@@ -144,7 +144,7 @@ public class FilePlugin extends File.Plugin {
 		}
 
 		@Override public File create(String path) throws IOException {
-			return File.resolve(URI.create(getPath() + escape(path)));
+			return File.resolve(URI.create(escape(getPath() + path)));
 		}
 
 		@Override public void dispose() {
