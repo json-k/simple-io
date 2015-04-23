@@ -131,14 +131,13 @@ public class SmbPlugin extends Plugin {
 		}
 
 		@Override public String getPath() {
-			return Plugin.cleanPath(getURI().getPath());
+			return unescape(Plugin.cleanPath(getURI().getPath()));
 		}
 
 		@Override public URI getURI() {
 			try {
 				return new URI(ref.toString().replaceAll(" ", "%20"));
 			} catch (URISyntaxException e) {
-				e.printStackTrace();
 				return null;
 			}
 		}
@@ -162,12 +161,12 @@ public class SmbPlugin extends Plugin {
 			if (!SmbSIOFile.class.equals(file.getClass())) {
 				throw new IOException("Cross scheme rename not implemented (or allowed).");
 			}
-			ref.renameTo(new SmbFile(file.getURI().toString()));
+			ref.renameTo(new SmbFile(unescape(file.getURI().toString())));
 			return file.exists();
 		}
 
 		@Override public File create(String path) throws IOException {
-			return new SmbSIOFile(new SmbFile(ref.toString() + path));
+			return new SmbSIOFile(new SmbFile(ref.toString() + unescape(path)));
 		}
 
 		@Override public void dispose() {
