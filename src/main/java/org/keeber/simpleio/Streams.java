@@ -25,7 +25,15 @@ public class Streams {
 	}
 
 	public static String asString(InputStream is) throws IOException {
-		return new String(asByteArray(is));
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		copy(is, bos, true);
+		return bos.toString();
+	}
+
+	public static String asString(InputStream is, String encoding) throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		copy(is, bos, true);
+		return bos.toString(encoding);
 	}
 
 	public static void copy(InputStream is, OutputStream os, boolean close)

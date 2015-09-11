@@ -18,7 +18,7 @@ import org.keeber.simpleio.plugin.FilePlugin;
  * 
  * @author Jason
  *
- */ 
+ */
 public abstract class File {
 
 	/**
@@ -219,7 +219,7 @@ public abstract class File {
 		protected static String escape(String path) {
 			return path.replaceAll(" ", "%20");
 		}
-		
+
 		protected static String unescape(String path) {
 			return path.replaceAll("%20", " ");
 		}
@@ -344,7 +344,8 @@ public abstract class File {
 					return file.isVisible() && file.getPath().matches(regex);
 				}
 
-				public boolean isFollowed(File file, int depth) throws IOException {
+				public boolean isFollowed(File file, int depth)
+						throws IOException {
 					return true;
 				}
 
@@ -381,7 +382,8 @@ public abstract class File {
 		/**
 		 * The default comparator (by Name, Ascending).
 		 */
-		public static final Comparator<File> DEFAULT = new Sorter(By.NAME, Order.ASCENDING);
+		public static final Comparator<File> DEFAULT = new Sorter(By.NAME,
+				Order.ASCENDING);
 
 		/**
 		 * Factory method for creating File comparators.
@@ -407,13 +409,18 @@ public abstract class File {
 			public int compare(File t1, File t2) {
 				try {
 					if (by == By.MODIFIED) {
-						return order.getN() * (new Long(t1.getLastModified()).compareTo(t2.getLastModified()));
+						return order.getN()
+								* (new Long(t1.getLastModified()).compareTo(t2
+										.getLastModified()));
 					} else if (by == By.DEPTH) {
 						int len1 = t1.getPath().split("/").length;
 						int len2 = t2.getPath().split("/").length;
-						return order.getN() * ((len1 == len2) ? 0 : (len1 > len2) ? 1 : -1);
+						return order.getN()
+								* ((len1 == len2) ? 0 : (len1 > len2) ? 1 : -1);
 					} else {
-						return order.getN() * (t1.getName().toLowerCase().compareTo(t2.getName().toLowerCase()));
+						return order.getN()
+								* (t1.getName().toLowerCase().compareTo(t2
+										.getName().toLowerCase()));
 					}
 				} catch (IOException ex) {
 				}
@@ -441,6 +448,16 @@ public abstract class File {
 		}
 
 		/**
+		 * String content of this file.
+		 * 
+		 * @return
+		 * @throws IOException
+		 */
+		public String getStringContent(String encoding) throws IOException {
+			return Streams.asString(File.this.open(File.READ), encoding);
+		}
+
+		/**
 		 * Byte the content of this file.
 		 * 
 		 * @return
@@ -461,6 +478,17 @@ public abstract class File {
 			setByteContent(content.getBytes());
 		}
 
+		/**
+		 * Writes the provided string content to this file.
+		 * 
+		 * @param content
+		 * @return
+		 * @throws IOException
+		 */
+		public void setStringContent(String content,String encoding) throws IOException {
+			setByteContent(content.getBytes(encoding));
+		}
+		
 		/**
 		 * Writes the provided byte content to this file.
 		 * 
@@ -493,14 +521,21 @@ public abstract class File {
 			StringBuilder s = new StringBuilder();
 			s.append("{\n");
 			s.append("\t\"URI\":\"").append(File.this.getURI()).append("\",\n");
-			s.append("\t\"name\":\"").append(File.this.getName()).append("\",\n");
-			s.append("\t\"path\":\"").append(File.this.getPath()).append("\",\n");
+			s.append("\t\"name\":\"").append(File.this.getName())
+					.append("\",\n");
+			s.append("\t\"path\":\"").append(File.this.getPath())
+					.append("\",\n");
 
 			try {
-				s.append("\t\"exists\": ").append(File.this.exists()).append(",\n");
-				s.append("\t\"dir\": ").append(File.this.isDirectory()).append(",\n");
-				s.append("\t\"length\": ").append(File.this.length()).append("\n");
-				s.append("\t\"lastModified\": \"").append(new Date(File.this.getLastModified()).toString()).append("\",\n");
+				s.append("\t\"exists\": ").append(File.this.exists())
+						.append(",\n");
+				s.append("\t\"dir\": ").append(File.this.isDirectory())
+						.append(",\n");
+				s.append("\t\"length\": ").append(File.this.length())
+						.append("\n");
+				s.append("\t\"lastModified\": \"")
+						.append(new Date(File.this.getLastModified())
+								.toString()).append("\",\n");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -519,7 +554,8 @@ public abstract class File {
 			if (!File.this.exists()) {
 				return true;
 			}
-			List<File> contents = File.this.list(filters.ALL, comparators.sort(comparators.By.DEPTH, comparators.Order.DECENDING));
+			List<File> contents = File.this.list(filters.ALL, comparators.sort(
+					comparators.By.DEPTH, comparators.Order.DECENDING));
 			for (File file : contents) {
 				file.delete();
 			}
@@ -594,7 +630,8 @@ public abstract class File {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract List<File> list(Filter filter, Comparator<File> sorter) throws IOException;
+	public abstract List<File> list(Filter filter, Comparator<File> sorter)
+			throws IOException;
 
 	/**
 	 * List all of the files that pass through the provided filter sorted with
@@ -672,18 +709,22 @@ public abstract class File {
 		}
 	}
 
-	@Override public String toString() {
+	@Override
+	public String toString() {
 		return "File [getURI()=" + getURI() + "]";
 	}
 
-	@Override public int hashCode() {
+	@Override
+	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((getURI() == null) ? 0 : getURI().hashCode());
+		result = prime * result
+				+ ((getURI() == null) ? 0 : getURI().hashCode());
 		return result;
 	}
 
-	@Override public boolean equals(Object obj) {
+	@Override
+	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -708,7 +749,8 @@ public abstract class File {
 	 * @throws IOException
 	 */
 	public static File getUserHome() throws IOException {
-		return File.resolve(new java.io.File(System.getProperty("user.home")).toURI().toString());
+		return File.resolve(new java.io.File(System.getProperty("user.home"))
+				.toURI().toString());
 	}
 
 	/**
@@ -734,10 +776,11 @@ public abstract class File {
 	 * @return
 	 * @throws IOException
 	 */
-	public static File createTempFile(String prefix, String suffix) throws IOException {
+	public static File createTempFile(String prefix, String suffix)
+			throws IOException {
 		java.io.File tmp = java.io.File.createTempFile(prefix, suffix);
 		tmp.deleteOnExit();
 		return File.resolve(tmp.toURI());
 	}
-	
+
 }

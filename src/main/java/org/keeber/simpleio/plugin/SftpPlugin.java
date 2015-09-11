@@ -27,20 +27,24 @@ import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
 
 public class SftpPlugin extends Plugin {
-	private static final Logger logger = Logger.getLogger(SftpPlugin.class.getName());
- 
+	private static final Logger logger = Logger.getLogger(SftpPlugin.class
+			.getName());
+
 	public static Plugin create() {
 		return new SftpPlugin();
 	}
 
-	@Override public File resolve(URI uri) throws IOException {
-		URL url = new URL(Plugin.unescape(uri.toString()).replace("sftp://", "ftp://"));
+	@Override
+	public File resolve(URI uri) throws IOException {
+		URL url = new URL(Plugin.unescape(uri.toString()).replace("sftp://",
+				"ftp://"));
 
 		JSch ssh = new JSch();
 		String host = url.getHost();
 		String[] userinfo = uri.getUserInfo().split(":");
 		String username = URLDecoder.decode(userinfo[0], "UTF-8");
-		String password = (userinfo.length == 1) ? null : URLDecoder.decode(userinfo[1], "UTF-8");
+		String password = (userinfo.length == 1) ? null : URLDecoder.decode(
+				userinfo[1], "UTF-8");
 		try {
 			Session session = ssh.getSession(username, host, 22);
 
@@ -52,16 +56,19 @@ public class SftpPlugin extends Plugin {
 			session.connect();
 
 			Channel channel = session.openChannel("sftp");
+
 			channel.connect();
 			ChannelSftp client = (ChannelSftp) channel;
 
-			return new SftpSIOFile(client, host, username, password, url.getPath());
+			return new SftpSIOFile(client, host, username, password,
+					url.getPath());
 		} catch (JSchException e) {
 			throw new IOException(e);
 		}
 	}
 
-	@Override public String getScheme() {
+	@Override
+	public String getScheme() {
 		return "sftp";
 	}
 
@@ -75,7 +82,8 @@ public class SftpPlugin extends Plugin {
 		private String password;
 		private String host;
 
-		public SftpSIOFile(ChannelSftp client, String host, String username, String password, String path) throws IOException {
+		public SftpSIOFile(ChannelSftp client, String host, String username,
+				String password, String path) throws IOException {
 			this.client = client;
 			this.path = path;
 			this.host = host;
@@ -178,10 +186,13 @@ public class SftpPlugin extends Plugin {
 		}
 
 		public File parent() throws IOException {
-			return new SftpSIOFile(client, host, username, password, Plugin.getParentFromPath(path));
+			return new SftpSIOFile(client, host, username, password,
+					Plugin.getParentFromPath(path));
 		}
 
-		@Override public List<File> list(Filter filter, Comparator<File> sorter) throws IOException {
+		@Override
+		public List<File> list(Filter filter, Comparator<File> sorter)
+				throws IOException {
 			ArrayList<File> list = IOList(filter, this.path, 0);
 			Collections.sort(list, sorter);
 			return list;
@@ -191,7 +202,8 @@ public class SftpPlugin extends Plugin {
 			return list(filter, File.comparators.DEFAULT);
 		}
 
-		private ArrayList<File> IOList(Filter filter, String root, int depth) throws IOException {
+		private ArrayList<File> IOList(Filter filter, String root, int depth)
+				throws IOException {
 			ArrayList<File> retList = new ArrayList<File>();
 			if (stats == null || !stats.isDir()) {
 				return retList;
@@ -204,8 +216,11 @@ public class SftpPlugin extends Plugin {
 				for (Object o : client.ls(root)) {
 					f = (ChannelSftp.LsEntry) o;
 
-					SftpSIOFile ff = new SftpSIOFile(client, host, username, password, Plugin.cleanPath(root + "/" + f.getFilename()));
-					if (ff.getPath().endsWith(".") || ff.getName().endsWith(".")) {
+					SftpSIOFile ff = new SftpSIOFile(client, host, username,
+							password, Plugin.cleanPath(root + "/"
+									+ f.getFilename()));
+					if (ff.getPath().endsWith(".")
+							|| ff.getName().endsWith(".")) {
 						continue;
 					}
 					if (filter.isListed(ff)) {
@@ -239,7 +254,9 @@ public class SftpPlugin extends Plugin {
 			return Plugin.cleanPath(host + "/" + path);
 		}
 
-		@SuppressWarnings("unchecked") @Override public <T> T open(Class<T> streamType) throws IOException {
+		@SuppressWarnings("unchecked")
+		@Override
+		public <T> T open(Class<T> streamType) throws IOException {
 			this.checkConnect();
 			try {
 				client.cd(Plugin.getParentFromPath(path));
@@ -250,7 +267,8 @@ public class SftpPlugin extends Plugin {
 					return (T) client.get(getName());
 				}
 				if (streamType == File.WRITE) {
-					return (T) new CloseNotifyOutputStream(client.put(getName()));
+					return (T) new CloseNotifyOutputStream(
+							client.put(getName()));
 				}
 			} catch (SftpException e) {
 				throw new IOException(e);
@@ -265,7 +283,8 @@ public class SftpPlugin extends Plugin {
 				super(is);
 			}
 
-			@Override public void close() throws IOException {
+			@Override
+			public void close() throws IOException {
 				super.close();
 				init();
 			}
@@ -277,7 +296,8 @@ public class SftpPlugin extends Plugin {
 				return false;
 			}
 			if (!SftpSIOFile.class.equals(file.getClass())) {
-				throw new IOException("Cross scheme rename not implemented (or allowed).");
+				throw new IOException(
+						"Cross scheme rename not implemented (or allowed).");
 			}
 			this.checkConnect();
 			String oPath = ((SftpSIOFile) file).path;
@@ -299,7 +319,8 @@ public class SftpPlugin extends Plugin {
 			}
 			client.disconnect();
 
-			logger.log(Level.CONFIG, "File[{0}] Logged out.", new Object[] { getScheme() });
+			logger.log(Level.CONFIG, "File[{0}] Logged out.",
+					new Object[] { getScheme() });
 		}
 
 		public boolean isVisible() {
@@ -307,20 +328,24 @@ public class SftpPlugin extends Plugin {
 		}
 
 		public File create(String path) throws IOException {
-			return new SftpSIOFile(client, host, username, password, Plugin.cleanPath(this.path + path));
+			return new SftpSIOFile(client, host, username, password,
+					Plugin.cleanPath(this.path + path));
 		}
 
 		public String stringMarshal() {
 			return "ftp://" + username + ":" + password + "@" + host + path;
 		}
 
-		@Override public long getLastModified() throws IOException {
+		@Override
+		public long getLastModified() throws IOException {
 			return (stats == null) ? 0 : stats.getMTime();
 		}
 
-		@Override public URI getURI() {
+		@Override
+		public URI getURI() {
 			try {
-				return new URI("sftp", username + ":" + password, host, 22, path, null, null);
+				return new URI("sftp", username + ":" + password, host, 22,
+						path, null, null);
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 				return null;
