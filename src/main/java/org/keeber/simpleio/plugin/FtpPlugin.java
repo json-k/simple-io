@@ -100,7 +100,6 @@ public class FtpPlugin extends Plugin {
 
 		private void resolveRef() throws IOException {
 			String pPath = Plugin.getParentFromPath(path.replaceFirst("/$", ""));
-			System.out.println(pPath);
 			if (path == null || pPath == null || pPath.equals(path) || pPath.length() == 0) {
 				this.ref = new FTPFile();
 				ref.setName("/");
@@ -367,7 +366,6 @@ public class FtpPlugin extends Plugin {
 		}
 
 		public FTPFileEntryParser createFileEntryParser(FTPClientConfig config) throws ParserInitializationException {
-			System.out.println("CONF:" + config);
 			return new Parser();
 		}
 
