@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -190,25 +191,20 @@ public class SftpPlugin extends Plugin {
     }
 
     @Override
-    public List<File> list(Filter filter, Comparator<File> sorter) throws IOException {
-      ArrayList<File> list = IOList(filter, this.path, 0);
+    public List<File> list(GrabFilter grab, MoveFilter move, Comparator<File> sorter) throws IOException {
+      ArrayList<File> list = IOList(grab, move, this.path, 0);
       Collections.sort(list, sorter);
       return list;
     }
 
-    public List<File> list(Filter filter) throws IOException {
-      return list(filter, File.comparators.DEFAULT);
-    }
 
-    private ArrayList<File> IOList(Filter filter, String root, int depth) throws IOException {
+    private ArrayList<File> IOList(GrabFilter grab, MoveFilter move, String root, int depth) throws IOException {
       ArrayList<File> retList = new ArrayList<File>();
       if (stats == null || !stats.isDir()) {
         return retList;
       }
       this.checkConnect();
       try {
-        // client.cd(root);
-
         ChannelSftp.LsEntry f;
         for (Object o : client.ls(root)) {
           f = (ChannelSftp.LsEntry) o;
@@ -217,11 +213,11 @@ public class SftpPlugin extends Plugin {
           if (ff.getPath().endsWith(".") || ff.getName().endsWith(".")) {
             continue;
           }
-          if (filter.isListed(ff)) {
+          if (grab.shouldGrab(ff)) {
             retList.add(ff);
           }
-          if (ff.isDirectory() && filter.isFollowed(ff, depth)) {
-            retList.addAll(IOList(filter, ff.path, depth + 1));
+          if (ff.isDirectory() && move.shouldMove(ff, depth)) {
+            retList.addAll(IOList(grab, move, ff.path, depth + 1));
           }
         }
       } catch (SftpException e) {
@@ -248,28 +244,24 @@ public class SftpPlugin extends Plugin {
       return Plugin.cleanPath(host + "/" + path);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T open(Class<T> streamType) throws IOException {
+    protected InputStream read() throws IOException {
       this.checkConnect();
       try {
-        client.cd(Plugin.getParentFromPath(path));
-        if (streamType == File.READ) {
-          if (stats == null || isDirectory()) {
-            return null;
-          }
-          return (T) new BufferedInputStream(client.get(getName()));
-        }
-        if (streamType == File.WRITE) {
-          return (T) new CloseNotifyOutputStream(new BufferedOutputStream(client.put(getName())));
-        }
+        return new BufferedInputStream(client.get(getName()));
       } catch (SftpException e) {
         throw new IOException(e);
       }
-      return null;
-
     }
 
+    protected OutputStream write() throws IOException {
+      this.checkConnect();
+      try {
+        return new CloseNotifyOutputStream(new BufferedOutputStream(client.put(getName())));
+      } catch (SftpException e) {
+        throw new IOException(e);
+      }
+    }
+    
     public class CloseNotifyOutputStream extends FilterOutputStream {
 
       protected CloseNotifyOutputStream(OutputStream is) {

@@ -1,6 +1,8 @@
 package org.keeber.simpleio.plugin;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -8,171 +10,188 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.keeber.simpleio.File;
+import org.keeber.simpleio.File.Plugin;
+
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 import jcifs.smb.SmbFileInputStream;
 import jcifs.smb.SmbFileOutputStream;
 
-import org.keeber.simpleio.File;
-import org.keeber.simpleio.File.Plugin;
-
 public class SmbPlugin extends Plugin {
-	public static final String FILEPROTOCOL = "file";
+  public static final String FILEPROTOCOL = "file";
 
-	@Override public File resolve(URI uri) throws IOException {
-		return new SmbSIOFile(new SmbFile(Plugin.unescape(uri.toString())));
-	}
+  @Override
+  public File resolve(URI uri) throws IOException {
+    return new SmbSIOFile(new SmbFile(Plugin.unescape(uri.toString())));
+  }
 
-	@Override public String getScheme() {
-		return "smb";
-	}
- 
-	public static Plugin create() {
-		return new SmbPlugin();
-	}
+  @Override
+  public String getScheme() {
+    return "smb";
+  }
 
-	public static void setSMBProperty(String prop, String val) {
-		jcifs.Config.setProperty(prop, val);
-	}
+  public static Plugin create() {
+    return new SmbPlugin();
+  }
 
-	public static class SmbSIOFile extends File {
-		protected SmbFile ref;
+  public static void setSMBProperty(String prop, String val) {
+    jcifs.Config.setProperty(prop, val);
+  }
 
-		protected SmbSIOFile(SmbFile ref) {
-			this.ref = ref;
-		}
+  public static class SmbSIOFile extends File {
+    protected SmbFile ref;
 
-		@SuppressWarnings("unchecked") @Override public <T> T open(Class<T> streamType) throws IOException {
-			if (streamType.equals(File.READ)) {
-				return (T) new SmbFileInputStream(ref);
-			}
-			if (streamType.equals(File.WRITE)) {
-				return (T) new SmbFileOutputStream(ref);
-			}
-			return null;
-		}
+    protected SmbSIOFile(SmbFile ref) {
+      this.ref = ref;
+    }
 
-		@Override public long getLastModified() throws IOException {
-			return ref.lastModified();
-		}
+    protected InputStream read() throws IOException {
+      return new SmbFileInputStream(ref);
+    }
 
-		@Override public void setLastModified(long time) throws IOException {
-			ref.setLastModified(time);
-		}
+    protected OutputStream write() throws IOException {
+      return new SmbFileOutputStream(ref);
+    }
 
-		@Override public long length() throws IOException {
-			return ref.exists() ? ref.length() : 0;
-		}
+    @Override
+    public long getLastModified() throws IOException {
+      return ref.lastModified();
+    }
 
-		@Override public boolean isDirectory() throws IOException {
-			return ref.isDirectory() || ref.toString().endsWith("/");
-		}
+    @Override
+    public void setLastModified(long time) throws IOException {
+      ref.setLastModified(time);
+    }
 
-		@Override public boolean isFile() throws IOException {
-			return !isDirectory();
-		}
+    @Override
+    public long length() throws IOException {
+      return ref.exists() ? ref.length() : 0;
+    }
 
-		@Override public boolean isVisible() throws IOException {
-			return !ref.getName().startsWith(".") && !ref.isHidden();
-		}
+    @Override
+    public boolean isDirectory() throws IOException {
+      return ref.isDirectory() || ref.toString().endsWith("/");
+    }
 
-		@Override public boolean exists() throws IOException {
-			return ref.exists();
-		}
+    @Override
+    public boolean isFile() throws IOException {
+      return !isDirectory();
+    }
 
-		@Override public File parent() throws IOException {
-			return new SmbSIOFile(new SmbFile(ref.getParent()));
-		}
+    @Override
+    public boolean isVisible() throws IOException {
+      return !ref.getName().startsWith(".") && !ref.isHidden();
+    }
 
-		@Override public List<File> list(Filter filter, Comparator<File> sorter) throws IOException {
-			List<File> list;
-			try {
-				list = IOList(filter, ref, 0);
-			} catch (SmbException e) {
-				throw new IOException(e);
-			}
-			Collections.sort(list, sorter);
-			return list;
-		}
+    @Override
+    public boolean exists() throws IOException {
+      return ref.exists();
+    }
 
-		@Override public List<File> list(Filter filter) throws IOException {
-			return this.list(filter, File.comparators.DEFAULT);
-		}
+    @Override
+    public File parent() throws IOException {
+      return new SmbSIOFile(new SmbFile(ref.getParent()));
+    }
 
-		public ArrayList<File> IOList(Filter filter, SmbFile root, int depth) throws SmbException, IOException {
-			ArrayList<File> retList = new ArrayList<File>();
-			SmbFile[] list;
-			if (root.canRead()) {
-				list = root.listFiles();
-				if (list != null) {
-					for (SmbFile f : list) {
-						if (filter.isListed(new SmbSIOFile(f))) {
-							retList.add(new SmbSIOFile(f));
-						}
-						if (f.isDirectory() && filter.isFollowed(new SmbSIOFile(f), depth)) {
-							retList.addAll(IOList(filter, f, depth + 1));
-						}
-					}
-				}
-			}
-			return retList;
-		}
+    @Override
+    public List<File> list(GrabFilter grab, MoveFilter move, Comparator<File> sorter) throws IOException {
+      List<File> list;
+      try {
+        list = IOList(grab, move, ref, 0);
+      } catch (SmbException e) {
+        throw new IOException(e);
+      }
+      Collections.sort(list, sorter);
+      return list;
+    }
 
-		@Override public String getName() {
-			return ref.getName().replaceFirst("/$", "");
-		}
 
-		@Override public String getBaseName() {
-			return Plugin.getBaseName(getName());
-		}
+    private ArrayList<File> IOList(GrabFilter grab, MoveFilter move, SmbFile root, int depth) throws SmbException, IOException {
+      ArrayList<File> retList = new ArrayList<File>();
+      SmbFile[] list;
+      if (root.canRead()) {
+        list = root.listFiles();
+        if (list != null) {
+          for (SmbFile f : list) {
+            if (grab.shouldGrab(new SmbSIOFile(f))) {
+              retList.add(new SmbSIOFile(f));
+            }
+            if (f.isDirectory() && move.shouldMove(new SmbSIOFile(f), depth)) {
+              retList.addAll(IOList(grab, move, f, depth + 1));
+            }
+          }
+        }
+      }
+      return retList;
+    }
 
-		@Override public String getExtension() {
-			return Plugin.getExtension(getName());
-		}
+    @Override
+    public String getName() {
+      return ref.getName().replaceFirst("/$", "");
+    }
 
-		@Override public String getPath() {
-			return unescape(Plugin.cleanPath(getURI().getPath()));
-		}
+    @Override
+    public String getBaseName() {
+      return Plugin.getBaseName(getName());
+    }
 
-		@Override public URI getURI() {
-			try {
-				return new URI(ref.toString().replaceAll(" ", "%20"));
-			} catch (URISyntaxException e) {
-				return null;
-			}
-		}
+    @Override
+    public String getExtension() {
+      return Plugin.getExtension(getName());
+    }
 
-		@Override public boolean delete() throws IOException {
-			ref.delete();
-			return ref.exists();
-		}
+    @Override
+    public String getPath() {
+      return unescape(Plugin.cleanPath(getURI().getPath()));
+    }
 
-		@Override public boolean mkdir() throws IOException {
-			ref.mkdir();
-			return ref.exists();
-		}
+    @Override
+    public URI getURI() {
+      try {
+        return new URI(ref.toString().replaceAll(" ", "%20"));
+      } catch (URISyntaxException e) {
+        return null;
+      }
+    }
 
-		@Override public boolean mkdirs() throws IOException {
-			ref.mkdirs();
-			return ref.exists();
-		}
+    @Override
+    public boolean delete() throws IOException {
+      ref.delete();
+      return ref.exists();
+    }
 
-		@Override public boolean rename(File file) throws IOException {
-			if (!SmbSIOFile.class.equals(file.getClass())) {
-				throw new IOException("Cross scheme rename not implemented (or allowed).");
-			}
-			ref.renameTo(new SmbFile(unescape(file.getURI().toString())));
-			return file.exists();
-		}
+    @Override
+    public boolean mkdir() throws IOException {
+      ref.mkdir();
+      return ref.exists();
+    }
 
-		@Override public File create(String path) throws IOException {
-			return new SmbSIOFile(new SmbFile(ref.toString() + unescape(path)));
-		}
+    @Override
+    public boolean mkdirs() throws IOException {
+      ref.mkdirs();
+      return ref.exists();
+    }
 
-		@Override public void dispose() {
-			// Not required
-		}
+    @Override
+    public boolean rename(File file) throws IOException {
+      if (!SmbSIOFile.class.equals(file.getClass())) {
+        throw new IOException("Cross scheme rename not implemented (or allowed).");
+      }
+      ref.renameTo(new SmbFile(unescape(file.getURI().toString())));
+      return file.exists();
+    }
 
-	}
+    @Override
+    public File create(String path) throws IOException {
+      return new SmbSIOFile(new SmbFile(ref.toString() + unescape(path)));
+    }
+
+    @Override
+    public void dispose() {
+      // Not required
+    }
+
+  }
 
 }
