@@ -1,7 +1,11 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 version = '2.0.0'
+group = "org.keeber"
+archivesBaseName = "simple-io"
 
 repositories { mavenCentral() }
 
@@ -13,16 +17,73 @@ dependencies{
 	compile 'com.jcraft:jsch:0.1.53'
 }
 
-jar{
-	from {
-		configurations.compile.collect {
-			it.isDirectory() ? it : zipTree(it)
-		}
-		configurations.runtime.collect {
-			it.isDirectory() ? it : zipTree(it)
-		}
-	}
-	exclude('**/servlet*.jar')
+javadoc {
+    failOnError = false
 }
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      pom.project {
+        name 'Simple IO'
+        packaging 'jar'
+        artifactId 'simple-io'
+        description 'A file and folder abstraction.'
+        url 'https://github.com/json-k/simple-io'
+
+        scm {
+          connection 'scm:svn:https://github.com/json-k/simple-io.git'
+          developerConnection 'scm:git:https://github.com/json-k/simple-io.git'
+          url 'https://github.com/json-k/simple-io'
+        }
+
+        licenses {
+          license {
+            name 'The Apache License, Version 2.0'
+            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
+        }
+
+        developers {
+          developer {
+            id 'json-k'
+            name 'json-k'
+            email 'jason@keeber.org'
+          }
+        }
+      }
+    }
+  }
+}
+
+
 
 

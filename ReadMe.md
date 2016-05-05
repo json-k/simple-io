@@ -11,10 +11,18 @@ I built this library on three ideas:
 2. **Simplicity** - both the API and the implementation. Not every possible scenario is accounted for, because until they are needed good enough is OK.
 3. **Consistency** - why does a Java File created with a path containing a trailing slash not assume it is a directory when the file does not exist? Why does it return the path without the trailing slash when it does (exist)?
 
+#Maven
+
+The project is now available in the Maven Central Repository. For your Gradle build:
+
+```
+	compile 'org.keeber:simple-io:2.0.0'
+```
+
 #Quickstart
 ##Creation
 
-It all starts with the static resolve method. Here we create a 'plain' file (in the user home):
+It all starts with the static resolve method. Here we create a 'plain' file (in the user home): 
 
 ```java
 File file=File.resolve("~/my/path/to/file.txt");
