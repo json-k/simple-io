@@ -20,8 +20,8 @@ The project is now available in the Maven Central Repository. For your Gradle bu
 	compile 'org.keeber:simple-io:2.0.0'
 ```
 
-#Quickstart
-##Creation
+# Quickstart
+## Creation
 
 It all starts with the static resolve method. Here we create a 'plain' file (in the user home): 
 
