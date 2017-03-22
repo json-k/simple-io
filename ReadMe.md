@@ -3,7 +3,8 @@
 **Simple IO** is a library similar to the Apache Virtual Filesystem - wrapping different protocols in an abstraction that uses the pattern of files and folders.
 
 It has a plugin architecture that currently supports the File, SMB, FTP and SFTP protocols.
-#Philosophy
+
+# Philosophy
 
 I built this library on three ideas:
 
@@ -11,7 +12,7 @@ I built this library on three ideas:
 2. **Simplicity** - both the API and the implementation. Not every possible scenario is accounted for, because until they are needed good enough is OK.
 3. **Consistency** - why does a Java File created with a path containing a trailing slash not assume it is a directory when the file does not exist? Why does it return the path without the trailing slash when it does (exist)?
 
-#Maven
+# Maven
 
 The project is now available in the Maven Central Repository. For your Gradle build:
 
@@ -41,7 +42,7 @@ File dir=File.resolve("/user/local/");
 File file=dir.create("file.txt");
 ```
 
-##Plugins
+## Plugins
 
 The library includes a set of built-in plugins that can be loaded with the static addPlugin method. Files can then be created with one of the loaded protocols:
 
@@ -53,7 +54,7 @@ File ftp=File.resolve("ftp://user:pass@server/path/to/file.txt");
  
 Note: special characters in the authorization can (should) be URL escaped (eg: p@ss becomes p%40ss).
 
-##Listing Folders
+## Listing Folders
 
 Listing files is controlled by two filter classes which are (functional) interfaces that determine which files should be listed and which directories should be followed (for easy recursion).
 
@@ -89,7 +90,7 @@ There are also some built in filters stored statically on the File.filters class
 ```java
 List<File> files = folder.list(File.filters.VISIBLE_FILES, File.filters.ONLY_THIS_DIRECTORY);
 ```
-##Reading and Writing
+## Reading and Writing
 
 Files can be read from and written to by opening them:
 
@@ -110,7 +111,7 @@ File ofile = File.resolve("/user/local/file.txt");
 Streams.copy(ifile.open(File.READ), ofile.open(File.WRITE), true);
 ```
 
-##Operations
+## Operations
 
 There are some useful operations attached to each file (part of the abstract file object and not the individual implementations):
 
@@ -122,7 +123,7 @@ ifile.operations.copyTo(ofile);
 
 (Including a copy method, for when you don't need control over the resulting streams (eg: for counting)).
 
-##Utilities
+## Utilities
 
 In addition to the resolve method the File class also provides other static utility methods:
 
