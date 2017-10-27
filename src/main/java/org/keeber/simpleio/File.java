@@ -520,10 +520,10 @@ public abstract class File implements Comparable<File> {
     public File mkdirs() throws IOException {
       if (File.this.isDirectory() && !File.this.exists()) {
         File.this.mkdirs();
-        return File.this;
-      } else {
-        return File.this.parent().operations.mkdirs();
+      } else if (File.this.isFile() && !File.this.parent().exists()) {
+        File.this.parent().mkdirs();
       }
+      return File.this;
     }
 
   }
