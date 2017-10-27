@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,6 +18,10 @@ import org.keeber.simpleio.File.MoveFilter;
 public class Hotfolder {
   private String id;
   private int index = 0;
+
+  public Hotfolder() {
+    this.id = UUID.randomUUID().toString();
+  }
 
   public Hotfolder(String id) {
     this.id = id;
@@ -35,22 +40,25 @@ public class Hotfolder {
     return folder;
   }
 
-  public void setFolder(File folder) {
+  public Hotfolder setFolder(File folder) {
     this.folder = folder;
+    return this;
   }
 
 
-  public void setFilters(GrabFilter grab, MoveFilter move) {
+  public Hotfolder setFilters(GrabFilter grab, MoveFilter move) {
     this.grab = grab;
     this.move = move;
+    return this;
   }
 
   public Comparator<File> getSorter() {
     return sorter;
   }
 
-  public void setSorter(Comparator<File> sorter) {
+  public Hotfolder setSorter(Comparator<File> sorter) {
     this.sorter = sorter;
+    return this;
   }
 
   private int interval = 15;
@@ -61,24 +69,42 @@ public class Hotfolder {
     return interval;
   }
 
-  public void setInterval(int interval) {
+  /**
+   * 
+   * 
+   * @param interval
+   * @param unit
+   * @param settle
+   * @return
+   */
+  public Hotfolder setTimes(int interval, TimeUnit unit, int settle) {
     this.interval = interval;
+    this.unit = unit;
+    this.settle = settle;
+    return this;
+  }
+
+  public Hotfolder setInterval(int interval) {
+    this.interval = interval;
+    return this;
   }
 
   public int getSettle() {
     return settle;
   }
 
-  public void setSettle(int settle) {
+  public Hotfolder setSettle(int settle) {
     this.settle = settle;
+    return this;
   }
 
   public TimeUnit getUnit() {
     return unit;
   }
 
-  public void setUnit(TimeUnit unit) {
+  public Hotfolder setUnit(TimeUnit unit) {
     this.unit = unit;
+    return this;
   }
 
   private transient Logger logger;
@@ -89,9 +115,9 @@ public class Hotfolder {
 
   private Subscriber subscriber;
 
-  public void setSubscriber(Subscriber subscriber) {
-    this.subscriber = subscriber;
-    this.subscriber.setParent(this);
+  public Hotfolder setSubscriber(Subscriber subscriber) {
+    this.subscriber = subscriber.setParent(this);
+    return this;
   }
 
   public static abstract class Subscriber {
@@ -121,8 +147,9 @@ public class Hotfolder {
       return parent;
     }
 
-    private void setParent(Hotfolder Hotfolder) {
+    private Subscriber setParent(Hotfolder Hotfolder) {
       parent = Hotfolder;
+      return this;
     }
 
   }
@@ -134,7 +161,7 @@ public class Hotfolder {
     return running;
   }
 
-  public void setRunning(boolean running) {
+  public Hotfolder setRunning(boolean running) {
     if (this.running != running) {
       this.running = running;
       if (running) {
@@ -158,6 +185,7 @@ public class Hotfolder {
         reset();
       }
     }
+    return this;
   }
 
   public void release(File file) {
@@ -167,8 +195,9 @@ public class Hotfolder {
     }
   }
 
-  public void reset() {
+  public Hotfolder reset() {
     filemap.clear();
+    return this;
   }
 
   private final Map<File, FileTracker> filemap = new ConcurrentHashMap<File, FileTracker>();

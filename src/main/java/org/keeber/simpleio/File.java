@@ -19,7 +19,7 @@ import org.keeber.simpleio.plugin.FilePlugin;
  * @author Jason
  *
  */
-public abstract class File {
+public abstract class File implements Comparable<File> {
 
   /**
    * <p>
@@ -423,41 +423,44 @@ public abstract class File {
      * @return
      * @throws IOException
      */
-    public void setStringContent(String content) throws IOException {
-      setByteContent(content.getBytes());
+    public File setStringContent(String content) throws IOException {
+      return setByteContent(content.getBytes());
     }
 
     /**
      * Writes the provided string content to this file.
      * 
      * @param content
-     * @return
+     * @return this file.
      * @throws IOException
      */
-    public void setStringContent(String content, String encoding) throws IOException {
-      setByteContent(content.getBytes(encoding));
+    public File setStringContent(String content, String encoding) throws IOException {
+      return setByteContent(content.getBytes(encoding));
+
     }
 
     /**
      * Writes the provided byte content to this file.
      * 
-     * @return
+     * @return this file.
      * @throws IOException
      */
-    public void setByteContent(byte[] content) throws IOException {
+    public File setByteContent(byte[] content) throws IOException {
       ByteArrayInputStream bos = new ByteArrayInputStream(content);
       Streams.copy(bos, File.this.open(File.WRITE), true);
+      return File.this;
     }
 
     /**
      * Copy the content of the current file to the provided output file.
      * 
      * @param out
-     * @return
+     * @return the copied file.
      * @throws IOException
      */
-    public void copyTo(File out) throws IOException {
+    public File copyTo(File out) throws IOException {
       Streams.copy(File.this.open(File.READ), out.open(File.WRITE), true);
+      return out;
     }
 
     /**
@@ -503,6 +506,26 @@ public abstract class File {
       File.this.delete();
       return !File.this.exists();
     }
+
+    /**
+     * A 'smart' mkdirs command. If this file is a directory the mkdirs command is called on it -
+     * otherwise it is called on the parent.
+     * 
+     * <p>
+     * This allows chaining of the create command.
+     * 
+     * @return the file.
+     * @throws IOException
+     */
+    public File mkdirs() throws IOException {
+      if (File.this.isDirectory() && !File.this.exists()) {
+        File.this.mkdirs();
+        return File.this;
+      } else {
+        return File.this.parent().operations.mkdirs();
+      }
+    }
+
   }
 
   /*
@@ -672,6 +695,11 @@ public abstract class File {
     int result = 1;
     result = prime * result + ((getURI() == null) ? 0 : getURI().hashCode());
     return result;
+  }
+
+  @Override
+  public int compareTo(File o) {
+    return this.getName().compareTo(o.getName());
   }
 
   @Override
